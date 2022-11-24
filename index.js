@@ -16,6 +16,7 @@ async function run(){
     try{
         const usersCollections = client.db('resaleMarket').collection('users');
         const productsCollections = client.db('resaleMarket').collection('products');
+        const categoryCollections = client.db('resaleMarket').collection('names');
 
         // create user
         app.post('/users', async(req, res) =>{
@@ -26,6 +27,13 @@ async function run(){
         });
 
         // get products
+        app.get('/products', async(req, res) =>{
+            const query = {};
+            const result = await productsCollections.find(query).toArray();
+            res.send(result);
+        });
+        
+        // get category name
         
 
     }
