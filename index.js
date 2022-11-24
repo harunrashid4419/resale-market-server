@@ -34,7 +34,11 @@ async function run(){
         });
         
         // get category name
-        
+        app.get('/category', async(req, res) =>{
+            const query = {};
+            const category = await categoryCollections.find(query).toArray();
+            res.send(category);
+        })
 
     }
     finally{
