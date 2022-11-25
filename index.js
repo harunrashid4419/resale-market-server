@@ -94,7 +94,7 @@ async function run(){
             const email = req.query.email;
             const decodedEmail = req.decoded.email;
             if(email !== decodedEmail){
-                return res.status(403).send({message: 'forbidden access'})
+                return res.status(403).send({message: 'forbidden access'}); 
             }
             const query = {userEmail: email};
             const result = await ordersCollections.find(query).toArray();
@@ -126,6 +126,13 @@ async function run(){
             const id = req.params.id;
             const query = {_id: ObjectId(id)};
             const result = await usersCollections.findOne(query);
+            res.send(result);
+        });
+
+        app.delete('/users/:id', async(req, res) =>{
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const result = await usersCollections.deleteOne(query);
             res.send(result);
         })
 
