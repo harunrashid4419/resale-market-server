@@ -32,6 +32,13 @@ async function run(){
             res.send(result);
         });
 
+        // post products
+        app.post('/products', async(req, res) =>{
+            const products = req.body;
+            const result = await productsCollections.insertOne(products);
+            res.send(result);
+        })
+
         // get products
         app.get('/products', async(req, res) =>{
             const query = {};
@@ -66,7 +73,6 @@ async function run(){
             const email = req.query.email;
             const query = {userEmail: email};
             const result = await ordersCollections.find(query).toArray();
-            console.log(result)
             res.send(result);
         })
 
