@@ -90,12 +90,13 @@ async function run(){
             res.send(order);
         })
 
-        app.get('/orders', verifyJWT, async(req, res) =>{
+        app.get('/orders',  async(req, res) =>{
             const email = req.query.email;
-            const decodedEmail = req.decoded.email;
-            if(email !== decodedEmail){
-                return res.status(403).send({message: 'forbidden access'}); 
-            }
+            // const decodedEmail = req.decoded.email;
+            // console.log(email, decodedEmail)
+            // if(email !== decodedEmail){
+            //     return res.status(403).send({message: 'forbidden access'}); 
+            // }
             const query = {userEmail: email};
             const result = await ordersCollections.find(query).toArray();
             res.send(result);
@@ -106,7 +107,6 @@ async function run(){
             const email = req.query.email;
             const query = {email: email};
             const user = await usersCollections.findOne(query);
-            console.log(user)
             if(user){
                 const token = jwt.sign({email}, process.env.ACCESS_TOKEN, {expiresIn: '1h'});
                 return res.send({accessToken: token})
@@ -129,11 +129,43 @@ async function run(){
             res.send(result);
         });
 
+        // delete users 
         app.delete('/users/:id', async(req, res) =>{
             const id = req.params.id;
             const query = {_id: ObjectId(id)};
             const result = await usersCollections.deleteOne(query);
             res.send(result);
+        });
+
+        // verify users
+        app.put('/users/:id', async(req, res) =>{
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const option = {upsert: true};
+            const updatedDoc = {
+                $set: {
+                    isVerify: 'verify'
+                }
+            };
+            const result = await usersCollections.updateOne(query, updatedDoc, option);
+            res.send(result);
+        });
+
+        // query email and get users info
+        // app.get('/users', async(req, res) =>{
+        //     const query = req.query.email;
+        //     console.log(query);
+        //     const filter = {email: email};
+        //     const result = await usersCollections.findOne(filter);
+        //     res.send(result);
+
+        // })
+
+        app.get('/users/admin/:email', async(req, res) =>{
+            const email = req.params.email;
+            const query = {email};
+            const user = await usersCollections.findOne(query);
+            res.send({isAdmin: user?.role === 'admin'});
         })
 
     }
