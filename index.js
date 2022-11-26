@@ -52,20 +52,12 @@ async function run(){
         })
 
         // get products
-        app.get('/products', async(req, res) =>{
-            const query = {};
-            const result = await productsCollections.find(query).toArray();
-            res.send(result);
-        });
+        // app.get('/products', async(req, res) =>{
+        //     const query = {};
+        //     const result = await productsCollections.find(query).toArray();
+        //     res.send(result);
+        // });
 
-        // get products email query
-        app.get('/products', async(req, res) =>{
-            const email = req.query.email;
-            const query = {email: email};
-            const result = await productsCollections.find(query).toArray();
-            console.log('email')
-            res.send(result);
-        })
         
         // get category name
         app.get('/category', async(req, res) =>{
@@ -81,7 +73,21 @@ async function run(){
             const result = await productsCollections.find(query).toArray();
             res.send(result);
         });
-    
+
+        // get specific user added product 
+        app.get('/products', async(req, res) =>{
+            const email = req.query.email;
+            const filter = {email: email};
+            const result = await productsCollections.find(filter).toArray();
+            res.send(result);
+        });
+
+        app.delete('/products/:id', async(req, res) =>{
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const result = await productsCollections.deleteOne(filter);
+            res.send(result);
+        })
 
         // order create
         app.post('/orders', async(req, res) =>{
@@ -161,11 +167,28 @@ async function run(){
 
         // })
 
+        // admin route
         app.get('/users/admin/:email', async(req, res) =>{
             const email = req.params.email;
             const query = {email};
             const user = await usersCollections.findOne(query);
             res.send({isAdmin: user?.role === 'admin'});
+        });
+
+        // bayer route 
+        app.get('/users/bayer/:email', async(req, res) =>{
+            const email = req.params.email;
+            const query = {email};
+            const user = await usersCollections.findOne(query);
+            res.send({isBayer: user?.role === 'Bayer'});
+        });
+
+        // seller route
+        app.get('/users/seller/:email', async(req, res) =>{
+            const email = req.params.email;
+            const query = {email};
+            const seller = await usersCollections.findOne(query);
+            res.send({isSeller: seller?.role === 'Seller'});
         })
 
     }
