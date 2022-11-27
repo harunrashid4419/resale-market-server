@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require("stripe")(process.env.STRIPE_KEY);
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -36,7 +37,10 @@ async function run(){
         const productsCollections = client.db('resaleMarket').collection('products');
         const categoryCollections = client.db('resaleMarket').collection('names');
         const ordersCollections = client.db('resaleMarket').collection('orders');
-
+        const reportedCollections = client.db('resaleMarket').collection('reported')
+        const paymentsCollections = client.db('resaleMarket').collection('payment')
+        
+        
         // create user
         app.post('/users', async(req, res) =>{
             const user = req.body;
@@ -138,7 +142,7 @@ async function run(){
         // delete users 
         app.delete('/users/:id', async(req, res) =>{
             const id = req.params.id;
-            const query = {_id: ObjectId(id)};
+            const query = {_id: ObjectId(id)}; 
             const result = await usersCollections.deleteOne(query);
             res.send(result);
         });
@@ -170,10 +174,11 @@ async function run(){
         // admin route
         app.get('/users/admin/:email', async(req, res) =>{
             const email = req.params.email;
-            const query = {email};
+            const query = { email:email};
             const user = await usersCollections.findOne(query);
+            // console.log(email, query, user)
             res.send({isAdmin: user?.role === 'admin'});
-        });
+        })
 
         // bayer route 
         app.get('/users/bayer/:email', async(req, res) =>{
@@ -189,7 +194,72 @@ async function run(){
             const query = {email};
             const seller = await usersCollections.findOne(query);
             res.send({isSeller: seller?.role === 'Seller'});
+        });
+
+        // reported items
+        app.post('/report', async(req, res) =>{
+            const product = req.body;
+            const result = await reportedCollections.insertOne(product);
+            res.send(result);
+        });
+        
+         // reported deleted items
+         app.delete('/report/:id', async(req, res) =>{
+            const id  = req.params.id;
+            const query = {product_id: id};
+            const result = await reportedCollections.deleteOne(query);
+            res.send(result);
+         })
+
+        // reported items get
+        app.get('/report', async(req, res) =>{
+            const query = {};
+            const report = await reportedCollections.find(query).toArray();
+            res.send(report);
+        });
+
+        // payment 
+        app.get('/orders/:id', async(req, res) =>{
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const order = await ordersCollections.findOne(query);
+            res.send(order);
+        });
+
+        // stripe payment
+        app.post('/create-payment-intent', async(req, res) =>{
+            const order = req.body;
+            const price = order.price;
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: "usd",
+                amount: amount,
+                "payment_method_types": [
+                    "card"
+                ],
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+        // payment successfully transition info
+        app.post('/payments', async(req, res) =>{
+            const payment = req.body;
+            const result = await paymentsCollections.insertOne(payment);
+            const id = payment.ordersId;
+            const filter = {_id: ObjectId(id)};
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transitionId: payment.transitionId,
+                }
+            };
+            const updatedResult = await ordersCollections.updateOne(filter, updatedDoc);
+            res.send(result);
         })
+       
 
     }
     finally{
