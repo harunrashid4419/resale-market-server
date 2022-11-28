@@ -39,6 +39,7 @@ async function run(){
         const ordersCollections = client.db('resaleMarket').collection('orders');
         const reportedCollections = client.db('resaleMarket').collection('reported')
         const paymentsCollections = client.db('resaleMarket').collection('payment')
+        const advertisedCollections = client.db('resaleMarket').collection('advertise')
         
         
         // create user
@@ -54,14 +55,6 @@ async function run(){
             const result = await productsCollections.insertOne(products);
             res.send(result);
         })
-
-        // get products
-        // app.get('/products', async(req, res) =>{
-        //     const query = {};
-        //     const result = await productsCollections.find(query).toArray();
-        //     res.send(result);
-        // });
-
         
         // get category name
         app.get('/category', async(req, res) =>{
@@ -154,29 +147,18 @@ async function run(){
             const option = {upsert: true};
             const updatedDoc = {
                 $set: {
-                    isVerify: 'verify'
+                    isVerify: true
                 }
             };
             const result = await usersCollections.updateOne(query, updatedDoc, option);
             res.send(result);
         });
 
-        // query email and get users info
-        // app.get('/users', async(req, res) =>{
-        //     const query = req.query.email;
-        //     console.log(query);
-        //     const filter = {email: email};
-        //     const result = await usersCollections.findOne(filter);
-        //     res.send(result);
-
-        // })
-
         // admin route
         app.get('/users/admin/:email', async(req, res) =>{
             const email = req.params.email;
             const query = { email:email};
             const user = await usersCollections.findOne(query);
-            // console.log(email, query, user)
             res.send({isAdmin: user?.role === 'admin'});
         })
 
@@ -192,8 +174,8 @@ async function run(){
         app.get('/users/seller/:email', async(req, res) =>{
             const email = req.params.email;
             const query = {email};
-            const seller = await usersCollections.findOne(query);
-            res.send({isSeller: seller?.role === 'Seller'});
+            const user = await usersCollections.findOne(query);
+            res.send({isSeller: user?.role === 'Seller'});
         });
 
         // reported items
@@ -257,7 +239,38 @@ async function run(){
                 }
             };
             const updatedResult = await ordersCollections.updateOne(filter, updatedDoc);
+            const productId = payment.productId;
+            const productFilter = {_id: ObjectId(productId)};
+            const updatedProductDoc = {
+                $set:{
+                    isAdd: true
+                }
+            };
+            const productResult = await productsCollections.updateOne(productFilter, updatedProductDoc);
+            
+            const advertiseFilter = {product_id: productId};
+            const updatedAdvertise = {
+                $set:{
+                    isPaid: true
+                }
+            }
+            const advertiseResult = await advertisedCollections.updateOne(advertiseFilter, updatedAdvertise);
             res.send(result);
+        });
+
+
+        // add products on advertised
+        app.post('/advertise', async(req, res) =>{
+            const advertise = req.body;
+            const result = await advertisedCollections.insertOne(advertise);
+            res.send(result);
+        });
+
+        // get advertised 
+        app.get('/advertise', async(req, res) =>{
+            const query = {};
+            const advertise = await advertisedCollections.find(query).toArray();
+            res.send(advertise);
         })
        
 
